@@ -1,6 +1,7 @@
-﻿package github.com/howthestoryends/WG
+﻿package WG
 import(
    "net/http"
+   "net/url"
    "io/ioutil"
 )
 
@@ -34,6 +35,18 @@ func (w *WG) constructURL() string{
 }
 
 func (w *WG) retrieveData(action string, parameters map[string]string) string{
+
+        baseUrl, err := url.Parse("http://google.com/search")
+	if err != nil {
+                //panic!
+		
+	}
+
+	params := url.Values{}
+	params.Add("pass%word", "key%20word")
+
+	baseUrl.RawQuery = params.Encode()
+	
 
     var val,_ = http.Get("https://api.mybiz.com/articles.json")
     var res,_ = ioutil.ReadAll(val.Body)
