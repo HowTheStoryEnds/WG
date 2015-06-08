@@ -33,22 +33,28 @@ func (w *WG) constructURL() string{
      return w.transport + "://" + regional[w.region]
     
 }
+func (w *WG) addGetParams(uri string,parameters map[string][]string) string {
 
-func (w *WG) retrieveData(action string, parameters map[string]string) string{
-
-        baseUrl, err := url.Parse("http://google.com/search")
+      baseUrl, err := url.Parse(uri)
 	if err != nil {
                 //panic!
 		
 	}
 
 	params := url.Values{}
-	params.Add("pass%word", "key%20word")
+        for key,v := range parameters {
+           for _,value := range v {
+	      params.Add(key, value)
+           }
+        }
 
 	baseUrl.RawQuery = params.Encode()
-	
+     return uri + "?" + baseUrl.RawQuery
+}
 
-    var val,_ = http.Get("https://api.mybiz.com/articles.json")
+func (w *WG) retrieveData(action string, parameters map[string]string) string{
+
+    var val,_ = http.Get(addGetParams((constructURL() + action),parameters))
     var res,_ = ioutil.ReadAll(val.Body)
     val.Body.Close()
 
@@ -84,6 +90,10 @@ type Player struct {
     Tanks []Tank
 }
 
+func (w *WG) SearchPlayersByName(name string, exact bool) string{
+    retrieveData("account/list")
+    return ""
+}
 
 func (w* WG) GetPlayer(ApiKey string, player uint32) Player {
    return Player{}
