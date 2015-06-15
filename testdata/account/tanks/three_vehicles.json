@@ -1,0 +1,34 @@
+{
+    "status": "ok",
+    "meta": {
+        "count": 1
+    },
+    "data": {
+        "507197901": [
+            {
+                "statistics": {
+                    "wins": 213,
+                    "battles": 408
+                },
+                "mark_of_mastery": 4,
+                "tank_id": 11601
+            },
+            {
+                "statistics": {
+                    "wins": 190,
+                    "battles": 361
+                },
+                "mark_of_mastery": 4,
+                "tank_id": 3089
+            },
+            {
+                "statistics": {
+                    "wins": 177,
+                    "battles": 284
+                },
+                "mark_of_mastery": 4,
+                "tank_id": 11777
+            }
+        ]
+    }
+}

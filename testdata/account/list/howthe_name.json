@@ -1,0 +1,24 @@
+`{
+    "status": "ok",
+    "meta": {
+        "count": 4
+    },
+    "data": [
+        {
+            "nickname": "howtheblank",
+            "account_id": 502301211
+        },
+        {
+            "nickname": "HowTheGodsKill",
+            "account_id": 525427444
+        },
+        {
+            "nickname": "HowTheGuy",
+            "account_id": 506219127
+        },
+        {
+            "nickname": "HowTheStoryEnds",
+            "account_id": 507197901
+        }
+    ]
+    }

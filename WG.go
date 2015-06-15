@@ -10,6 +10,12 @@ import (
 	//"github.com/davecgh/go-spew/spew"
 )
 
+const MasteryNone uint32 = 0
+const MasteryThirdClass uint32 = 1
+const MasterySecondClass uint32 = 2
+const MasteryFirstClass uint32 = 3
+const MasteryAceTanker uint32 = 4
+
 // we request our data from WG server, we allow for net/http
 type WG struct {
 	region    string
@@ -64,6 +70,21 @@ func (w *WG) retrieveData(action string, parameters map[string][]string) (map[st
 	if _, present := parameters["application_id"]; !present {
 		parameters["application_id"] = []string{w.apiKey}
 	}
+
+	//combine the identical parameter in a , (comma) seperated string
+	for k, _ := range parameters {
+		params := ""
+		for _, iv := range parameters[k] {
+			if params == "" {
+				params = iv
+			} else {
+				params += "," + iv
+			}
+
+		}
+		parameters[k] = []string{params}
+	}
+
 	//construct the full URL
 	uri := w.addGetParams(w.constructURL()+action+"/", parameters)
 
@@ -98,15 +119,18 @@ func (w *WG) SetApiKey(val string) {
 }
 
 type Tank struct {
-	Name        string
-	InGarage    bool
-	AvgDmg      uint32
-	AvgSpotting uint32
-	AvgExp      uint32
-	Battles     uint32
-	BattlesLost uint32
-	BattlesWon  uint32
-	Winrate     uint32
+	Name          string
+	InGarage      bool
+	AvgDmg        uint32
+	AvgSpotting   uint32
+	AvgExp        uint32
+	Battles       uint32
+	BattlesLost   uint32
+	BattlesWon    uint32
+	Winrate       uint32
+	Wins          uint32
+	MarkOfMastery uint32
+	TankId        uint32
 }
 
 type Player struct {
@@ -195,16 +219,53 @@ type PlayerPrivate struct {
 	RestrictionsClanTime      uint32
 }
 
-func (w *WG) processPlayer(p map[string]interface{}) Player {
+func (w *WG) processTank(t map[string]interface{}) (interface{}, bool) {
+	var tank = Tank{}
+	ok := true
+
+	for k, v := range t {
+		if v == nil {
+			continue
+		}
+		switch k {
+		case "statistics":
+			for sk, sv := range v.(map[string]interface{}) {
+				if sv == nil {
+					continue
+				}
+				switch sk {
+				case "wins":
+					tank.Wins = uint32(sv.(float64))
+				case "battles":
+					tank.Battles = uint32(sv.(float64))
+				}
+			}
+		case "mark_of_mastery":
+			tank.MarkOfMastery = uint32(v.(float64))
+		case "tank_id":
+			tank.TankId = uint32(v.(float64))
+
+		}
+	}
+
+	// do not return empty Tank structures
+	if tank.TankId == 0 {
+		ok = false
+	}
+
+	return tank, ok
+
+}
+
+func (w *WG) processPlayer(p map[string]interface{}) (interface{}, bool) {
 	//nickname := result["data"].([]interface{})[x].(map[string]interface{})["nickname"].(string)
 	var player = Player{}
-
+	ok := true
 	//var p = make(map[string]interface{})
 	//var p map[string]interface{} = result["data"].([]interface{})[x].(map[string]interface{})
 
 	// insert empty holder, tanks are to be retrieved by different API call
 	player.Tanks = []Tank{}
-
 	for k, v := range p {
 		if v == nil {
 			continue
@@ -341,43 +402,79 @@ func (w *WG) processPlayer(p map[string]interface{}) Player {
 		}
 
 	}
-	//nickname := p["nickname"].(string)
-	//accountid := uint32(p["account_id"].(float64))
+
 	player.Region = w.region
-	//accountid := uint32(result["data"].([]interface{})[x].(map[string]interface{})["account_id"].(float64))
-	//	players[x] = Player{Nickname: nickname, AccountId: accountid, Region: w.region}
-	return player
+	// do not return empty Player structures
+	if player.AccountId == 0 {
+		ok = false
+	}
+	return player, ok
 }
 
-func (w *WG) resultsToPlayers(result map[string]interface{}) []Player {
+func (w *WG) resultsToData(result map[string]interface{}, toCallMap func(map[string]interface{}) (interface{}, bool), toCallArray func([]interface{}) (interface{}, bool)) []interface{} {
 	//v := result["meta"].(map[string]interface{})
 	//var fc float64 = v["count"].(float64)
 	//var count uint = uint(fc)
 
 	//fmt.Println("we found " + string(count) + "/" + strconv.FormatFloat(fc, 'f', -1, 64) + " players")
 
-	var players []Player
+	var content []interface{}
 
-	var found bool
-	_, found = result["data"].([]interface{})
+	_, found := result["data"].([]interface{})
 	if found {
 		for _, v := range result["data"].([]interface{}) {
-
-			players = append(players, w.processPlayer(v.(map[string]interface{})))
+			data, ok := toCallMap(v.(map[string]interface{}))
+			if ok {
+				content = append(content, data)
+			}
 		}
 	}
 	_, found = result["data"].(map[string]interface{})
 	if found {
 
 		for _, v := range result["data"].(map[string]interface{}) {
+			_, contentFound := v.(map[string]interface{})
+			if contentFound {
+				data, ok := toCallMap(v.(map[string]interface{}))
+				if ok {
+					content = append(content, data)
+				}
+			}
+			_, contentFound = v.([]interface{})
+			if contentFound {
+				for _, vv := range v.([]interface{}) {
+					data, ok := toCallMap(vv.(map[string]interface{}))
+					if ok {
+						content = append(content, data)
+					}
+				}
 
-			players = append(players, w.processPlayer(v.(map[string]interface{})))
+			}
 		}
 	}
-
-	return players
+	return content
 }
 
+func (w *WG) resultsToPlayer(results []interface{}) (solution []Player) {
+	// make sure we always return an empty array and not a nil array
+	solution = []Player{}
+	for _, r := range results {
+		solution = append(solution, r.(Player))
+
+	}
+	return
+}
+func (w *WG) resultsToTank(results []interface{}) (solution []Tank) {
+	// make sure we always return an empty array and not a nil array
+	solution = []Tank{}
+	for _, r := range results {
+		solution = append(solution, r.(Tank))
+
+	}
+	return
+}
+
+// account/list
 func (w *WG) SearchPlayersByName(name string, exact bool) []Player {
 	params := make(map[string][]string)
 	if exact {
@@ -390,19 +487,49 @@ func (w *WG) SearchPlayersByName(name string, exact bool) []Player {
 		return []Player{}
 	}
 
-	return w.resultsToPlayers(result)
+	return w.resultsToPlayer(w.resultsToData(result, w.processPlayer, nil))
+
 }
 
-func (w *WG) GetPlayerPersonalData(accountid uint32) (PlayersFound []Player) {
+// account/info
+func (w *WG) GetPlayerPersonalData(accountid []uint32) (PlayersFound []Player) {
 	params := make(map[string][]string)
-	params["account_id"] = []string{fmt.Sprint(accountid)}
+	var idHolder []string
+	for _, v := range accountid {
+		idHolder = append(idHolder, fmt.Sprint(v))
+	}
+
+	params["account_id"] = idHolder
 
 	var result, err = w.retrieveData("account/info", params)
 	if err != nil {
+		//TODO panic instead?
 		fmt.Println("GetPlayerPersonalData: " + err.Error())
 		return []Player{}
 	}
 
-	return w.resultsToPlayers(result)
+	return w.resultsToPlayer(w.resultsToData(result, w.processPlayer, nil))
+
+}
+
+func (w *WG) GetPlayerTanks(accountid uint32, vehicleid []uint32) []Tank {
+	params := make(map[string][]string)
+	var idHolder []string
+	for _, v := range vehicleid {
+		idHolder = append(idHolder, fmt.Sprint(v))
+	}
+
+	if len(idHolder) > 0 {
+		params["tank_id"] = idHolder
+	}
+	params["account_id"] = []string{fmt.Sprint(accountid)}
+	var result, err = w.retrieveData("account/tanks", params)
+	if err != nil {
+		//TODO panic instead?
+		fmt.Println("GetPlayerTanks: " + err.Error())
+		return []Tank{}
+	}
+
+	return w.resultsToTank(w.resultsToData(result, w.processTank, nil))
 
 }

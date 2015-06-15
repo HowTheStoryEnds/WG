@@ -1,0 +1,18 @@
+{
+    "status": "ok",
+    "meta": {
+        "count": 1
+    },
+    "data": {
+        "507197901": [
+            {
+                "statistics": {
+                    "wins": 55,
+                    "battles": 88
+                },
+                "mark_of_mastery": 4,
+                "tank_id": 1
+            }
+        ]
+    }
+}
