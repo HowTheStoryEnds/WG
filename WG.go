@@ -7,7 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	//"strconv"
+
+	"strconv"
 	//"github.com/davecgh/go-spew/spew"
 )
 
@@ -35,6 +36,9 @@ type Vehicle struct {
 	MarkOfMastery uint32            `json:"mark_of_mastery"`
 	TankId        uint32            `json:"tank_id"`
 	Statistics    VehicleStatistics `json:"statistics"`
+
+	// custom field
+	Owner uint32 `json:",omitempty"`
 }
 type VehicleStatistics struct {
 	Battles uint32 `json:"battles"`
@@ -189,8 +193,10 @@ func (r RequestAccountTanks) PlayerList() []Player {
 }
 func (r RequestAccountTanks) VehicleList() []Vehicle {
 	vehicles := []Vehicle{}
-	for _, v := range r.Data {
+	for k, v := range r.Data {
 		for _, vv := range v {
+			Owner, _ := strconv.ParseUint(k, 10, 32)
+			vv.Owner = uint32(Owner)
 			vehicles = append(vehicles, vv)
 		}
 	}
@@ -294,6 +300,7 @@ func (w *WG) apiCall(command string, params map[string]string) (ApiResponse, err
 		reqt := RequestAccountInfo{}
 		err = json.Unmarshal(data, &reqt)
 		req = reqt
+
 	case "account/tanks":
 		reqt := RequestAccountTanks{}
 		err = json.Unmarshal(data, &reqt)
@@ -333,7 +340,7 @@ func (w *WG) GetPlayerPersonalData(accountid []uint32) ([]Player, error) {
 
 	for _, v := range accountid {
 		_, ok := params["account_id"]
-		if !ok {
+		if len(params["account_id"]) == 0 || !ok {
 			params["account_id"] = fmt.Sprint(v)
 		} else {
 			params["account_id"] += "," + fmt.Sprint(v)
@@ -350,19 +357,24 @@ func (w *WG) GetPlayerPersonalData(accountid []uint32) ([]Player, error) {
 }
 
 // account/tanks
-func (w *WG) GetPlayerTanks(accountid uint32, vehicleid []uint32) ([]Vehicle, error) {
+func (w *WG) GetPlayerTanks(accountid []uint32, vehicleid []uint32) ([]Vehicle, error) {
 	params := make(map[string]string)
-
 	for _, v := range vehicleid {
 		_, ok := params["tank_id"]
-		if !ok {
+		if len(params["tank_id"]) == 0 || !ok {
 			params["tank_id"] = fmt.Sprint(v)
 		} else {
 			params["tank_id"] += "," + fmt.Sprint(v)
 		}
 	}
-
-	params["account_id"] = fmt.Sprint(accountid)
+	for _, v := range accountid {
+		_, ok := params["account_id"]
+		if len(params["account_id"]) == 0 || !ok {
+			params["account_id"] = fmt.Sprint(v)
+		} else {
+			params["account_id"] += "," + fmt.Sprint(v)
+		}
+	}
 	result, err := w.apiCall("account/tanks", params)
 	if err != nil {
 		fmt.Println("GetPlayerTanks: " + err.Error())

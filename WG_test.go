@@ -41,6 +41,9 @@ func (s *WGSuite) SetUpSuite(c *C) {
 	rd.Content, _ = ioutil.ReadFile("./testdata/account/list/howthe_name.json")
 	res = append(res, rd)
 
+	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/list/?application_id=demo&search=howthestt"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/account/list/howthestt_name.json")
+	res = append(res, rd)
 	/*
 	 *           account/info
 	 */
@@ -65,7 +68,8 @@ func (s *WGSuite) SetUpSuite(c *C) {
 	 *   account/tanks
 	 */
 	// single vehicle
-	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901&application_id=demo&tank_id=1"}
+	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901&application_id=demo&tank_id=1",
+		"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901&application_id=demo&tank_id=13%2C1"}
 	rd.Content, _ = ioutil.ReadFile("./testdata/account/tanks/single_vehicle.json")
 	res = append(res, rd)
 	// three vehicles
@@ -80,7 +84,14 @@ func (s *WGSuite) SetUpSuite(c *C) {
 	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901&application_id=demo"}
 	rd.Content, _ = ioutil.ReadFile("./testdata/account/tanks/complete_vehicle_list.json")
 	res = append(res, rd)
-
+	// complete vehicle list multiple players
+	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901%2C515080611&application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/account/tanks/complete_vehicle_list_multiple_players.json")
+	res = append(res, rd)
+	// multiple players, multiple vehicles
+	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901%2C515080611&application_id=demo&tank_id=81%2C3329%2C321"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/account/tanks/multiple_players_multiple_vehicles.json")
+	res = append(res, rd)
 	//setup HTTP mocking service
 	httpmock.Activate()
 	//setup the urls with their content
@@ -139,7 +150,6 @@ func (s *WGSuite) TestSearchPlayersByName(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Check(data, DeepEquals, player)
 
-	return
 	// exact search yielding 1 result
 	data2, _ := s.Wg.SearchPlayersByName("howthestoryends", true)
 	c.Check(player, DeepEquals, data2)
@@ -472,9 +482,9 @@ func (s *WGSuite) TestGetPlayerPersonalData(c *C) {
 
 }
 
-func hasTank(TankId uint32, TankCollection []Vehicle) bool {
+func hasTank(TankId uint32, Owner uint32, TankCollection []Vehicle) bool {
 	for _, t := range TankCollection {
-		if t.TankId == TankId {
+		if t.TankId == TankId && t.Owner == Owner {
 			return true
 		}
 	}
@@ -482,20 +492,30 @@ func hasTank(TankId uint32, TankCollection []Vehicle) bool {
 }
 func (s *WGSuite) TestGetPlayerTanks(c *C) {
 	s.Wg.SetRegion("eu")
-	Vehicle_1 := Vehicle{Statistics: VehicleStatistics{Wins: 55, Battles: 88}, MarkOfMastery: 4, TankId: 1}
-	Vehicle_11601 := Vehicle{Statistics: VehicleStatistics{Wins: 213, Battles: 408}, MarkOfMastery: 4, TankId: 11601}
-	Vehicle_3089 := Vehicle{Statistics: VehicleStatistics{Wins: 190, Battles: 361}, MarkOfMastery: 4, TankId: 3089}
-	Vehicle_11777 := Vehicle{Statistics: VehicleStatistics{Wins: 177, Battles: 284}, MarkOfMastery: 4, TankId: 11777}
 
-	result, err := s.Wg.GetPlayerTanks(507197901, []uint32{1})
+	Vehicle_1 := Vehicle{Statistics: VehicleStatistics{Wins: 55, Battles: 88}, MarkOfMastery: 4, TankId: 1, Owner: 507197901}
+	Vehicle_11601 := Vehicle{Statistics: VehicleStatistics{Wins: 213, Battles: 408}, MarkOfMastery: 4, TankId: 11601, Owner: 507197901}
+	Vehicle_3089 := Vehicle{Statistics: VehicleStatistics{Wins: 190, Battles: 361}, MarkOfMastery: 4, TankId: 3089, Owner: 507197901}
+	Vehicle_11777 := Vehicle{Statistics: VehicleStatistics{Wins: 177, Battles: 284}, MarkOfMastery: 4, TankId: 11777, Owner: 507197901}
+
+	result, err := s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{1})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
 	// 1 vehicle
 	c.Check(result, DeepEquals, []Vehicle{Vehicle_1})
-	//multiple vehicles
-	result, err = s.Wg.GetPlayerTanks(507197901, []uint32{11601, 3089, 11777})
+	//multiple but not all found
+	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{13, 1})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	// 1 vehicle
+	c.Check(result, DeepEquals, []Vehicle{Vehicle_1})
+
+	// all found
+	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{11601, 3089, 11777})
 	var compare []Vehicle
 	for _, v := range result {
 		switch v.TankId {
@@ -510,22 +530,20 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 	c.Check(len(result), Equals, 3)
 	c.Check(result, DeepEquals, compare)
 	// unknown vehicle, should return an empty array
-	result, err = s.Wg.GetPlayerTanks(507197901, []uint32{2})
+	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{2})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
 	c.Check(result, DeepEquals, []Vehicle{})
+
 	// no vehicle ids given should return ALL vehicles
-	result, err = s.Wg.GetPlayerTanks(507197901, []uint32{})
+	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
 	// so check it returns enough vehicles
-	c.Check(len(result), Equals, 210)
-	//and check that it returned all the individual vehicles otherwise fail
-	// lots of append because gvim otherwise chokes on it ;_; boo windows
 	var pl = []uint32{11601, 1057, 3089, 10529, 4897, 1793, 11777, 11553, 10273, 12113, 3361, 2817, 2833, 3585, 5121, 5169, 7425, 3105, 1809, 10049, 57105, 8977, 3873, 1313}
 	pl = append(pl, []uint32{11265, 7697, 4385, 9217, 1105, 7713, 2065, 4609, 5713, 3857, 11857, 54785, 11585, 4657, 6161, 16657, 1041, 6401, 6177, 545, 51713, 5969, 1889, 6433, 10497, 4097, 5409}...)
 	pl = append(pl, []uint32{2625, 3633, 6465, 2897, 3601, 11025, 1537, 1121, 4913, 257, 513, 11009, 9553, 6721, 849, 2305, 801, 7761, 2577, 3329, 7201, 6673, 14097, 2369, 10241, 2881, 6417, 9041}...)
@@ -534,10 +552,47 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 	pl = append(pl, []uint32{8785, 11281, 1073, 4369, 53585, 54609, 4929, 9793, 16641, 55569, 10753, 7185, 5665, 17953, 289, 13393, 1825, 51457, 4641, 53841, 5393, 5153, 4401, 10833, 15617, 52769}...)
 	pl = append(pl, []uint32{18193, 57361, 5921, 12369, 5377, 7233, 1617, 8961, 54545, 4945, 55313, 16673, 6657, 8017, 4113, 81, 9761, 8257, 1089, 5953, 54801, 13345, 3409, 12545, 8273, 51745, 7169}...)
 	pl = append(pl, []uint32{52481, 7969, 18177, 321, 6993, 1345, 10577, 64817, 55297, 2353, 577, 9473, 609, 3345, 593, 3617, 5201, 1601, 1329, 53537, 51553, 1361, 60689, 7745}...)
+	c.Check(len(result), Equals, len(pl))
+	//and check that it returned all the individual vehicles otherwise fail
+	// lots of append because gvim otherwise chokes on it ;_; boo windows
+
 	for _, v := range pl {
-		if !hasTank(v, result) {
+		if !hasTank(v, 507197901, result) {
 			c.Fail()
 		}
 	}
+	// all vehicles but multiple players will return a map containing tank array
+	var pl2 = []uint32{81, 3089, 2065, 545, 3329}
+	result, err = s.Wg.GetPlayerTanks([]uint32{507197901, 515080611}, []uint32{})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	// check that all the tanks of their respective owners are returned
+	for _, v := range pl {
+		if !hasTank(v, 507197901, result) {
+			fmt.Println("507197901: missing tanks, pl array")
+			c.Fail()
+		}
+	}
+	for _, v := range pl2 {
+		if !hasTank(v, 515080611, result) {
+			fmt.Println("515080611: missing tanks, pl2 array")
+			c.Fail()
+		}
+	}
+	// so check it returns enough vehicles
+	c.Check(result, HasLen, len(pl)+len(pl2))
+
+	// not every player has every tank, both have 81 and 3329 bigger account has 321
+	result, err = s.Wg.GetPlayerTanks([]uint32{507197901, 515080611}, []uint32{81, 3329, 321})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	c.Check(hasTank(81, 507197901, result) && hasTank(81, 515080611, result), Equals, true)
+	c.Check(hasTank(3329, 507197901, result) && hasTank(3329, 515080611, result), Equals, true)
+	c.Check(hasTank(321, 507197901, result) && !hasTank(321, 515080611, result), Equals, true)
+	c.Check(result, HasLen, 5)
 
 }
