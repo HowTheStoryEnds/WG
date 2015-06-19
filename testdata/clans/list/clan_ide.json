@@ -1,0 +1,113 @@
+{
+    "status": "ok",
+    "meta": {
+        "count": 4,
+        "total": 4
+    },
+    "data": [
+        {
+            "members_count": 100,
+            "name": "IDEAL",
+            "color": "#8300DB",
+            "created_at": 1342479197,
+            "tag": "IDEAL",
+            "emblems": {
+                "x32": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"
+                },
+                "x24": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"
+                },
+                "x256": {
+                    "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"
+                },
+                "x64": {
+                    "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64.png"
+                },
+                "x195": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_195x195.png"
+                }
+            },
+            "clan_id": 500010805
+        },
+        {
+            "members_count": 1,
+            "name": "IDEA",
+            "color": "#832F6B",
+            "created_at": 1371260245,
+            "tag": "IDEA",
+            "emblems": {
+                "x32": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_32x32.png"
+                },
+                "x24": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_24x24.png"
+                },
+                "x256": {
+                    "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_256x256.png"
+                },
+                "x64": {
+                    "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64_tank.png",
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64.png"
+                },
+                "x195": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_195x195.png"
+                }
+            },
+            "clan_id": 500025706
+        },
+        {
+            "members_count": 4,
+            "name": "Wallet Warriors - all the gear, no idea",
+            "color": "#3CCDCF",
+            "created_at": 1383168470,
+            "tag": "ATGNI",
+            "emblems": {
+                "x32": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_32x32.png"
+                },
+                "x24": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_24x24.png"
+                },
+                "x256": {
+                    "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_256x256.png"
+                },
+                "x64": {
+                    "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64_tank.png",
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64.png"
+                },
+                "x195": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_195x195.png"
+                }
+            },
+            "clan_id": 500031713
+        },
+        {
+            "members_count": 5,
+            "name": "Zawsze Wierni Idealom Socjalizmu.",
+            "color": "#55505B",
+            "created_at": 1393522025,
+            "tag": "ZWIS",
+            "emblems": {
+                "x32": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_32x32.png"
+                },
+                "x24": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_24x24.png"
+                },
+                "x256": {
+                    "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_256x256.png"
+                },
+                "x64": {
+                    "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64_tank.png",
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64.png"
+                },
+                "x195": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_195x195.png"
+                }
+            },
+            "clan_id": 500039525
+        }
+    ]
+}

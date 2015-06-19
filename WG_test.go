@@ -92,6 +92,15 @@ func (s *WGSuite) SetUpSuite(c *C) {
 	rd.Uri = []string{"https://api.worldoftanks.eu/wot/account/tanks/?account_id=507197901%2C515080611&application_id=demo&tank_id=81%2C3329%2C321"}
 	rd.Content, _ = ioutil.ReadFile("./testdata/account/tanks/multiple_players_multiple_vehicles.json")
 	res = append(res, rd)
+
+	/*
+	 *   wgn/clans/list
+	 */
+	// search for name
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/list/?application_id=demo&limit=0&order_by=id&page_no=0&search=ide"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/list/clan_ide.json")
+	res = append(res, rd)
+
 	//setup HTTP mocking service
 	httpmock.Activate()
 	//setup the urls with their content
@@ -118,17 +127,17 @@ func (s *WGSuite) TestconstructURL(c *C) {
 	var params = map[string]string{"one": "1",
 		"two": "twee",
 	}
-	c.Check(s.Wg.constructURL("account/list", params), Equals, "http://api.worldoftanks.eu/wot/account/list/?one=1&two=twee")
+	c.Check(s.Wg.constructURL("wot/account/list", params), Equals, "http://api.worldoftanks.eu/wot/account/list/?one=1&two=twee")
 
 	// special characters need to be escaped
 	params = map[string]string{"1with_slashes": "co//ol", "2email": "harald.brinkhof@gmail.com"}
-	c.Check(s.Wg.constructURL("account/help", params), Equals, "http://api.worldoftanks.eu/wot/account/help/?1with_slashes=co%2F%2Fol&2email=harald.brinkhof%40gmail.com")
+	c.Check(s.Wg.constructURL("wot/account/help", params), Equals, "http://api.worldoftanks.eu/wot/account/help/?1with_slashes=co%2F%2Fol&2email=harald.brinkhof%40gmail.com")
 }
 
 func (s *WGSuite) TestretrieveData(c *C) {
 	s.Wg.SetTransport("https")
 	s.Wg.SetRegion("eu")
-	ret, err := s.Wg.retrieveData("account/list", map[string]string{"application_id": "demo", "type": "exact", "search": "howthestoryends"})
+	ret, err := s.Wg.retrieveData("wot/account/list", map[string]string{"application_id": "demo", "type": "exact", "search": "howthestoryends"})
 
 	data, _ := ioutil.ReadFile("./testdata/account/list/howthestoryends_name.json")
 	c.Check(err, Equals, nil)
@@ -595,4 +604,54 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 	c.Check(hasTank(321, 507197901, result) && !hasTank(321, 515080611, result), Equals, true)
 	c.Check(result, HasLen, 5)
 
+}
+
+func (s *WGSuite) TestSearchClansByName(c *C) {
+	s.Wg.SetRegion("eu")
+	s.Wg.SetTransport("https")
+
+	ClanIdeal := Clan{Tag: "IDEAL", ClanId: 500010805, Name: "IDEAL", Color: "#8300DB", CreatedAt: 1342479197, MembersCount: 100,
+		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_195x195.png"},
+		}}
+
+	ClanIdea := Clan{Tag: "IDEA", ClanId: 500025706, Name: "IDEA", Color: "#832F6B", CreatedAt: 1371260245, MembersCount: 1,
+		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_195x195.png"},
+		}}
+
+	ClanAtgni := Clan{Tag: "ATGNI", ClanId: 500031713, Name: "Wallet Warriors - all the gear, no idea", Color: "#3CCDCF", CreatedAt: 1383168470, MembersCount: 4,
+		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_195x195.png"},
+		}}
+
+	ClanZwis := Clan{Tag: "ZWIS", ClanId: 500039525, Name: "Zawsze Wierni Idealom Socjalizmu.", Color: "#55505B", CreatedAt: 1393522025, MembersCount: 5,
+		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_195x195.png"},
+		}}
+
+	compare := []Clan{ClanIdeal, ClanIdea, ClanAtgni, ClanZwis}
+	// search for ide returns 4 clans
+	result, err := s.Wg.SearchClansByName("ide", OrderById, 0, 0)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	c.Check(result, DeepEquals, compare)
 }
