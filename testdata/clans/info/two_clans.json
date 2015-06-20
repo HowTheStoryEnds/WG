@@ -1,0 +1,120 @@
+{
+    "status": "ok",
+    "meta": {
+        "count": 2
+    },
+    "data": {
+        "500001758": {
+            "leader_id": 500106838,
+            "color": "#F2755E",
+            "updated_at": 1422428943,
+            "private": null,
+            "tag": "GSI",
+            "members_count": 3,
+            "description_html": "<p>Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.\n</p>",
+            "creator_id": 504614524,
+            "leader_name": "TrascherGSI",
+            "emblems": {
+                "x32": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_32x32.png"
+                },
+                "x24": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_24x24.png"
+                },
+                "x256": {
+                    "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_256x256.png"
+                },
+                "x64": {
+                    "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_64x64_tank.png",
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_64x64.png"
+                },
+                "x195": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_195x195.png"
+                }
+            },
+            "clan_id": 500001758,
+            "renamed_at": 0,
+            "old_tag": "",
+            "description": "Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.",
+            "members": [
+                {
+                    "role": "commander",
+                    "role_i18n": "Commander",
+                    "joined_at": 1422389232,
+                    "account_id": 500106838,
+                    "account_name": "TrascherGSI"
+                },
+                {
+                    "role": "private",
+                    "role_i18n": "Private",
+                    "joined_at": 1305128931,
+                    "account_id": 500556981,
+                    "account_name": "flomander"
+                },
+                {
+                    "role": "executive_officer",
+                    "role_i18n": "Executive Officer",
+                    "joined_at": 1345363766,
+                    "account_id": 504614524,
+                    "account_name": "TrascherGSI20"
+                }
+            ],
+            "old_name": "",
+            "is_clan_disbanded": false,
+            "motto": "Bevor du uns kriegst hatten wir uns schon!",
+            "name": "German Suicide Idiots",
+            "creator_name": "TrascherGSI20",
+            "created_at": 1305128504,
+            "accepts_join_requests": true
+        },
+        "500002188": {
+            "leader_id": 500412877,
+            "color": "#BCA383",
+            "updated_at": 1414642458,
+            "private": null,
+            "tag": "-HR-",
+            "members_count": 1,
+            "description_html": "",
+            "creator_id": 500412877,
+            "leader_name": "xLegendx",
+            "emblems": {
+                "x32": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_32x32.png"
+                },
+                "x24": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_24x24.png"
+                },
+                "x256": {
+                    "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_256x256.png"
+                },
+                "x64": {
+                    "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_64x64_tank.png",
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_64x64.png"
+                },
+                "x195": {
+                    "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_195x195.png"
+                }
+            },
+            "clan_id": 500002188,
+            "renamed_at": 0,
+            "old_tag": "",
+            "description": "",
+            "members": [
+                {
+                    "role": "commander",
+                    "role_i18n": "Commander",
+                    "joined_at": 1306909870,
+                    "account_id": 500412877,
+                    "account_name": "xLegendx"
+                }
+            ],
+            "old_name": "",
+            "is_clan_disbanded": false,
+            "motto": ";)",
+            "name": "-HellRider",
+            "creator_name": "xLegendx",
+            "created_at": 1306909870,
+            "accepts_join_requests": false
+        }
+    }
+}

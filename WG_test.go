@@ -100,6 +100,24 @@ func (s *WGSuite) SetUpSuite(c *C) {
 	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/list/?application_id=demo&limit=0&order_by=id&page_no=0&search=ide"}
 	rd.Content, _ = ioutil.ReadFile("./testdata/clans/list/clan_ide.json")
 	res = append(res, rd)
+	// wgn/clans/info
+	// single clan
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/info/?application_id=demo&clan_id=500002188"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/info/single_clan.json")
+	res = append(res, rd)
+	// two clans
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/info/?application_id=demo&clan_id=500010805%2C500002188"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/info/two_clans.json")
+	res = append(res, rd)
+	// two clans, only 1 found
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/info/?application_id=demo&clan_id=500002188%2C1"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/info/two_clans_one_found.json")
+	res = append(res, rd)
+	// no clan found
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/info/?application_id=demo&clan_id=1",
+		"https://api.worldoftanks.eu/wgn/clans/info/?application_id=demo&clan_id=1%2C2"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/info/not_found.json")
+	res = append(res, rd)
 
 	//setup HTTP mocking service
 	httpmock.Activate()
@@ -156,17 +174,21 @@ func (s *WGSuite) TestSearchPlayersByName(c *C) {
 	// 'startswith' search yielding 1 result
 	var player = []Player{{Nickname: "HowTheStoryEnds", AccountId: 507197901}}
 	data, err := s.Wg.SearchPlayersByName("howthestoryends", false)
+
 	c.Assert(err, Equals, nil)
-	c.Check(data, DeepEquals, player)
+	retrieved := data.PlayerList()
+	c.Check(retrieved, DeepEquals, player)
 
 	// exact search yielding 1 result
 	data2, _ := s.Wg.SearchPlayersByName("howthestoryends", true)
-	c.Check(player, DeepEquals, data2)
+	retrieved = data2.PlayerList()
+	c.Check(retrieved, DeepEquals, player)
 
 	// search that can yield multiple results
 	var players = []Player{}
 	data3, _ := s.Wg.SearchPlayersByName("howthe", false)
-	for _, p := range data3 {
+	retrieved = data3.PlayerList()
+	for _, p := range retrieved {
 		switch p.Nickname {
 		case "howtheblank":
 			players = append(players, Player{Nickname: "howtheblank", AccountId: 502301211})
@@ -178,14 +200,15 @@ func (s *WGSuite) TestSearchPlayersByName(c *C) {
 			players = append(players, Player{Nickname: "HowTheStoryEnds", AccountId: 507197901})
 		}
 	}
-	c.Check(players, DeepEquals, data3)
+	c.Check(retrieved, DeepEquals, players)
 
 	//no result found
 	data4, _ := s.Wg.SearchPlayersByName("howthestt", false)
-	c.Check([]Player{}, DeepEquals, data4)
+	retrieved = data4.PlayerList()
+	c.Check(retrieved, DeepEquals, []Player{})
 }
 
-func (s *WGSuite) TestGetPlayerPersonalData(c *C) {
+func (s *WGSuite) TestGetPlayerInfo(c *C) {
 	s.Wg.SetTransport("https")
 	s.Wg.SetRegion("eu")
 
@@ -388,13 +411,15 @@ func (s *WGSuite) TestGetPlayerPersonalData(c *C) {
 	ps.All.TankingFactor = 0.35
 	HowTheStoryEnds.Statistics = ps
 
-	retrieved, err := s.Wg.GetPlayerPersonalData([]uint32{507197901})
+	data, err := s.Wg.GetPlayerInfo([]uint32{507197901})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved := data.PlayerList()
 	c.Check(retrieved, DeepEquals, []Player{HowTheStoryEnds})
-	retrieved, err = s.Wg.GetPlayerPersonalData([]uint32{507197901, 1})
+	data, err = s.Wg.GetPlayerInfo([]uint32{507197901, 1})
+	retrieved = data.PlayerList()
 	// id 1 does not exist so what should be returned is 1 player record for 507197901 and 1 empty player record
 	compare := []Player{}
 	for _, v := range retrieved {
@@ -457,19 +482,21 @@ func (s *WGSuite) TestGetPlayerPersonalData(c *C) {
 	HowTheGodsKill.Statistics.All.TankingFactor = 0.33
 
 	// check for good handling of clanless player
-	retrieved, err = s.Wg.GetPlayerPersonalData([]uint32{525427444})
+	data, err = s.Wg.GetPlayerInfo([]uint32{525427444})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved = data.PlayerList()
 	c.Check(retrieved, DeepEquals, []Player{HowTheGodsKill})
 
 	// check for good handling of multiple players, all found in 1 request
-	retrieved, err = s.Wg.GetPlayerPersonalData([]uint32{525427444, 507197901})
+	data, err = s.Wg.GetPlayerInfo([]uint32{525427444, 507197901})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved = data.PlayerList()
 	var HowTheGodsKill2, HowTheStoryEnds2 Player
 	var playersFound []Player
 	for _, v := range retrieved {
@@ -512,21 +539,24 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved := result.VehicleList()
 	// 1 vehicle
-	c.Check(result, DeepEquals, []Vehicle{Vehicle_1})
+	c.Check(retrieved, DeepEquals, []Vehicle{Vehicle_1})
 	//multiple but not all found
 	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{13, 1})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved = result.VehicleList()
 	// 1 vehicle
-	c.Check(result, DeepEquals, []Vehicle{Vehicle_1})
+	c.Check(retrieved, DeepEquals, []Vehicle{Vehicle_1})
 
 	// all found
 	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{11601, 3089, 11777})
+	retrieved = result.VehicleList()
 	var compare []Vehicle
-	for _, v := range result {
+	for _, v := range retrieved {
 		switch v.TankId {
 		case 11601:
 			compare = append(compare, Vehicle_11601)
@@ -536,15 +566,16 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 			compare = append(compare, Vehicle_11777)
 		}
 	}
-	c.Check(len(result), Equals, 3)
-	c.Check(result, DeepEquals, compare)
+	c.Check(len(retrieved), Equals, 3)
+	c.Check(retrieved, DeepEquals, compare)
 	// unknown vehicle, should return an empty array
 	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{2})
 	if err != nil {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
-	c.Check(result, DeepEquals, []Vehicle{})
+	retrieved = result.VehicleList()
+	c.Check(retrieved, DeepEquals, []Vehicle{})
 
 	// no vehicle ids given should return ALL vehicles
 	result, err = s.Wg.GetPlayerTanks([]uint32{507197901}, []uint32{})
@@ -552,6 +583,7 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved = result.VehicleList()
 	// so check it returns enough vehicles
 	var pl = []uint32{11601, 1057, 3089, 10529, 4897, 1793, 11777, 11553, 10273, 12113, 3361, 2817, 2833, 3585, 5121, 5169, 7425, 3105, 1809, 10049, 57105, 8977, 3873, 1313}
 	pl = append(pl, []uint32{11265, 7697, 4385, 9217, 1105, 7713, 2065, 4609, 5713, 3857, 11857, 54785, 11585, 4657, 6161, 16657, 1041, 6401, 6177, 545, 51713, 5969, 1889, 6433, 10497, 4097, 5409}...)
@@ -561,12 +593,12 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 	pl = append(pl, []uint32{8785, 11281, 1073, 4369, 53585, 54609, 4929, 9793, 16641, 55569, 10753, 7185, 5665, 17953, 289, 13393, 1825, 51457, 4641, 53841, 5393, 5153, 4401, 10833, 15617, 52769}...)
 	pl = append(pl, []uint32{18193, 57361, 5921, 12369, 5377, 7233, 1617, 8961, 54545, 4945, 55313, 16673, 6657, 8017, 4113, 81, 9761, 8257, 1089, 5953, 54801, 13345, 3409, 12545, 8273, 51745, 7169}...)
 	pl = append(pl, []uint32{52481, 7969, 18177, 321, 6993, 1345, 10577, 64817, 55297, 2353, 577, 9473, 609, 3345, 593, 3617, 5201, 1601, 1329, 53537, 51553, 1361, 60689, 7745}...)
-	c.Check(len(result), Equals, len(pl))
+	c.Check(len(retrieved), Equals, len(pl))
 	//and check that it returned all the individual vehicles otherwise fail
 	// lots of append because gvim otherwise chokes on it ;_; boo windows
 
 	for _, v := range pl {
-		if !hasTank(v, 507197901, result) {
+		if !hasTank(v, 507197901, retrieved) {
 			c.Fail()
 		}
 	}
@@ -577,21 +609,22 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
+	retrieved = result.VehicleList()
 	// check that all the tanks of their respective owners are returned
 	for _, v := range pl {
-		if !hasTank(v, 507197901, result) {
+		if !hasTank(v, 507197901, retrieved) {
 			fmt.Println("507197901: missing tanks, pl array")
 			c.Fail()
 		}
 	}
 	for _, v := range pl2 {
-		if !hasTank(v, 515080611, result) {
+		if !hasTank(v, 515080611, retrieved) {
 			fmt.Println("515080611: missing tanks, pl2 array")
 			c.Fail()
 		}
 	}
 	// so check it returns enough vehicles
-	c.Check(result, HasLen, len(pl)+len(pl2))
+	c.Check(retrieved, HasLen, len(pl)+len(pl2))
 
 	// not every player has every tank, both have 81 and 3329 bigger account has 321
 	result, err = s.Wg.GetPlayerTanks([]uint32{507197901, 515080611}, []uint32{81, 3329, 321})
@@ -599,10 +632,11 @@ func (s *WGSuite) TestGetPlayerTanks(c *C) {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
-	c.Check(hasTank(81, 507197901, result) && hasTank(81, 515080611, result), Equals, true)
-	c.Check(hasTank(3329, 507197901, result) && hasTank(3329, 515080611, result), Equals, true)
-	c.Check(hasTank(321, 507197901, result) && !hasTank(321, 515080611, result), Equals, true)
-	c.Check(result, HasLen, 5)
+	retrieved = result.VehicleList()
+	c.Check(hasTank(81, 507197901, retrieved) && hasTank(81, 515080611, retrieved), Equals, true)
+	c.Check(hasTank(3329, 507197901, retrieved) && hasTank(3329, 515080611, retrieved), Equals, true)
+	c.Check(hasTank(321, 507197901, retrieved) && !hasTank(321, 515080611, retrieved), Equals, true)
+	c.Check(retrieved, HasLen, 5)
 
 }
 
@@ -611,7 +645,7 @@ func (s *WGSuite) TestSearchClansByName(c *C) {
 	s.Wg.SetTransport("https")
 
 	ClanIdeal := Clan{Tag: "IDEAL", ClanId: 500010805, Name: "IDEAL", Color: "#8300DB", CreatedAt: 1342479197, MembersCount: 100,
-		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"},
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
@@ -620,7 +654,7 @@ func (s *WGSuite) TestSearchClansByName(c *C) {
 		}}
 
 	ClanIdea := Clan{Tag: "IDEA", ClanId: 500025706, Name: "IDEA", Color: "#832F6B", CreatedAt: 1371260245, MembersCount: 1,
-		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_32x32.png"},
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64_tank.png",
@@ -629,7 +663,7 @@ func (s *WGSuite) TestSearchClansByName(c *C) {
 		}}
 
 	ClanAtgni := Clan{Tag: "ATGNI", ClanId: 500031713, Name: "Wallet Warriors - all the gear, no idea", Color: "#3CCDCF", CreatedAt: 1383168470, MembersCount: 4,
-		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_32x32.png"},
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64_tank.png",
@@ -638,7 +672,7 @@ func (s *WGSuite) TestSearchClansByName(c *C) {
 		}}
 
 	ClanZwis := Clan{Tag: "ZWIS", ClanId: 500039525, Name: "Zawsze Wierni Idealom Socjalizmu.", Color: "#55505B", CreatedAt: 1393522025, MembersCount: 5,
-		Emblems: EmblemList{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_32x32.png"},
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64_tank.png",
@@ -653,5 +687,87 @@ func (s *WGSuite) TestSearchClansByName(c *C) {
 		fmt.Println(err.Error())
 		c.Fail()
 	}
-	c.Check(result, DeepEquals, compare)
+	retrieved := result.ClanList()
+	c.Check(retrieved, DeepEquals, compare)
+}
+
+func (s *WGSuite) TestGetClanInfo(c *C) {
+	s.Wg.SetRegion("eu")
+	s.Wg.SetTransport("https")
+
+	GSI := Clan{LeaderId: 500106838, Color: "#F2755E", UpdatedAt: 1422428943, Tag: "GSI", MembersCount: 3,
+		DescriptionHtml: "<p>Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.\n</p>",
+		CreatorId:       504614524, LeaderName: "TrascherGSI",
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_195x195.png"}},
+		ClanId: 500001758, RenamedAt: 0, OldTag: "", Description: "Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.",
+		Members: []ClanMember{ClanMember{Role: "commander", RoleI18n: "Commander", JoinedAt: 1422389232, AccountId: 500106838, AccountName: "TrascherGSI"},
+			ClanMember{Role: "private", RoleI18n: "Private", JoinedAt: 1305128931, AccountId: 500556981, AccountName: "flomander"},
+			ClanMember{Role: "executive_officer", RoleI18n: "Executive Officer", JoinedAt: 1345363766, AccountId: 504614524, AccountName: "TrascherGSI20"}},
+		OldName: "", IsClanDisbanded: false, Motto: "Bevor du uns kriegst hatten wir uns schon!", Name: "German Suicide Idiots",
+		CreatorName: "TrascherGSI20", CreatedAt: 1305128504, AcceptsJoinRequests: true}
+
+	HR := Clan{LeaderId: 500412877, Color: "#BCA383", UpdatedAt: 1414642458, Tag: "-HR-", MembersCount: 1,
+		DescriptionHtml: "",
+		CreatorId:       500412877, LeaderName: "xLegendx",
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_195x195.png"}},
+		ClanId: 500002188, RenamedAt: 0, OldTag: "", Description: "",
+		Members: []ClanMember{ClanMember{Role: "commander", RoleI18n: "Commander", JoinedAt: 1306909870, AccountId: 500412877,
+			AccountName: "xLegendx"}},
+		OldName: "", IsClanDisbanded: false, Motto: ";)", Name: "-HellRider",
+		CreatorName: "xLegendx", CreatedAt: 1306909870, AcceptsJoinRequests: false}
+
+	// single clan
+	result, err := s.Wg.GetClanInfo([]uint32{500002188}, NoAccessToken)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved := result.ClanList()
+	c.Check(retrieved, DeepEquals, []Clan{HR})
+
+	// more than 1 clan
+	result, err = s.Wg.GetClanInfo([]uint32{500010805, 500002188}, NoAccessToken)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved = result.ClanList()
+	compare := []Clan{}
+	for _, v := range retrieved {
+		switch v.Tag {
+		case "GSI":
+			compare = append(compare, GSI)
+		case "-HR-":
+			compare = append(compare, HR)
+		}
+
+	}
+	c.Check(retrieved, DeepEquals, compare)
+
+	// request 2 clans, find only 1, only the one found should be returned
+	result, err = s.Wg.GetClanInfo([]uint32{500002188, 1}, NoAccessToken)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved = result.ClanList()
+	c.Check(retrieved, DeepEquals, []Clan{HR})
+
+	// clan requested can not be found, empty array should be returned
+	result, err = s.Wg.GetClanInfo([]uint32{1, 2}, NoAccessToken)
+	retrieved = result.ClanList()
+	c.Check(retrieved, DeepEquals, []Clan{})
+	result, err = s.Wg.GetClanInfo([]uint32{1}, NoAccessToken)
+	retrieved = result.ClanList()
+	c.Check(retrieved, DeepEquals, []Clan{})
 }

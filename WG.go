@@ -29,9 +29,12 @@ const OrderByTagDesc = "-tag"
 const OrderByCreationDate = "created_at"
 const OrderByCreationDateDesc = "-created_at"
 
+const NoAccessToken = ""
+
 type ApiRequestError struct {
 	ApiRequest
-	Error ApiError
+	WGError ApiError `json:"error"`
+	Sibling error
 }
 type ApiError struct {
 	Code    uint32 `json:"code"`
@@ -39,6 +42,11 @@ type ApiError struct {
 	Field   string `json:"field"`
 	Value   string `json:"value"`
 }
+
+func (e ApiRequestError) Error() string {
+	return "Code: " + fmt.Sprint(e.WGError.Code) + "\n" + e.WGError.Message + "------------\n" + e.Sibling.Error()
+}
+
 type ApiRequest struct {
 	Status string    `json:"status"`
 	Meta   MetaCount `json:"meta"`
@@ -74,20 +82,45 @@ func (n NoPlayerList) PlayerList() []Player {
 }
 
 type Clan struct {
-	ClanId       uint32     `json:"clan_id"`
-	Color        string     `json:"color"`
-	CreatedAt    uint32     `json:"created_at"`
-	MembersCount uint32     `json:"members_count"`
-	Name         string     `json:"name"`
-	Tag          string     `json:"tag"`
-	Emblems      EmblemList `json:"emblems"`
+	AcceptsJoinRequests bool         `json:"accepts_join_requests"`
+	ClanId              uint32       `json:"clan_id"`
+	Color               string       `json:"color"`
+	CreatedAt           uint32       `json:"created_at"`
+	CreatorId           uint32       `json:"creator_id"`
+	CreatorName         string       `json:"creator_name"`
+	Description         string       `json:"description"`
+	DescriptionHtml     string       `json:"description_html"`
+	IsClanDisbanded     bool         `json:"is_clan_disbanded"`
+	LeaderId            uint32       `json:"leader_id"`
+	LeaderName          string       `json:"leader_name"`
+	MembersCount        uint32       `json:"members_count"`
+	Motto               string       `json:"motto"`
+	Name                string       `json:"name"`
+	OldTag              string       `json:"old_tag"`
+	OldName             string       `json:"old_name"`
+	RenamedAt           uint32       `json:"renamed_at"`
+	Tag                 string       `json:"tag"`
+	UpdatedAt           uint32       `json:"updated_at"`
+	Emblems             ClanEmblems  `json:"emblems"`
+	Members             []ClanMember `json:"members"`
+	Private             ClanPrivate  `json:"private"`
 }
-type EmblemList struct {
+type ClanEmblems struct {
 	X195 map[string]string `json:"x195"`
 	X24  map[string]string `json:"x24"`
 	X256 map[string]string `json:"x256"`
 	X32  map[string]string `json:"x32"`
 	X64  map[string]string `json:"x64"`
+}
+type ClanPrivate struct {
+	Treasury uint32 `json:"treasury"`
+}
+type ClanMember struct {
+	AccountId   uint32 `json:"account_id"`
+	AccountName string `json:"account_name"`
+	JoinedAt    uint32 `json:"joined_at"`
+	Role        string `json:"role"`
+	RoleI18n    string `json:"role_i18n"`
 }
 type Vehicle struct {
 	// https://eu.wargaming.net/developers/api_reference/wot/account/tanks/
@@ -265,6 +298,24 @@ func (r RequestClanList) ClanList() []Clan {
 	return r.Data
 }
 
+type RequestClanInfo struct {
+	NoPlayerList
+	NoVehicleList
+	ApiRequest
+	Data map[string]Clan `json:"data"`
+}
+
+func (r RequestClanInfo) ClanList() []Clan {
+	Clans := []Clan{}
+	for _, v := range r.Data {
+		// don't append 'empty' clans (those that aren't found), since we don't return the key
+		if v.ClanId != 0 {
+			Clans = append(Clans, v)
+		}
+	}
+	return Clans
+}
+
 // we request our data from WG server, we allow for net/http
 type WG struct {
 	region    string
@@ -371,6 +422,10 @@ func (w *WG) apiCall(command string, params map[string]string) (ApiResponse, err
 		reqt := RequestClanList{}
 		err = json.Unmarshal(data, &reqt)
 		req = reqt
+	case "wgn/clans/info":
+		reqt := RequestClanInfo{}
+		err = json.Unmarshal(data, &reqt)
+		req = reqt
 	default:
 		panic("Unknown command, this shouldn't happen")
 	}
@@ -379,13 +434,24 @@ func (w *WG) apiCall(command string, params map[string]string) (ApiResponse, err
 	if err == nil {
 		return req, err
 	}
+	// if an error is found check whether it's a WG API error by unmarshaling the data in an ApiError struct,
+	// so we can pass it along
+	apiError := ApiRequestError{}
+	ae := json.Unmarshal(data, &apiError)
+	if ae == nil && apiError.Status == "error" {
+		// wrap any WG API error around possible previous error
+		apiError.Sibling = err
+		// and we return the API error
+		err = apiError
+	}
+
 	//otherwise return just the error
 	return nil, err
 
 }
 
 // wot/account/list
-func (w *WG) SearchPlayersByName(name string, exact bool) ([]Player, error) {
+func (w *WG) SearchPlayersByName(name string, exact bool) (RequestAccountList, error) {
 	params := make(map[string]string)
 	if exact {
 		params["type"] = "exact"
@@ -393,15 +459,14 @@ func (w *WG) SearchPlayersByName(name string, exact bool) ([]Player, error) {
 	params["search"] = name
 	result, err := w.apiCall("wot/account/list", params)
 	if err != nil {
-		fmt.Println("SearchPlayersByName: " + err.Error())
-		return nil, err
+		return RequestAccountList{}, err
 	}
-	return result.PlayerList(), err
+	return result.(RequestAccountList), err
 
 }
 
 // wot/account/info
-func (w *WG) GetPlayerPersonalData(accountid []uint32) ([]Player, error) {
+func (w *WG) GetPlayerInfo(accountid []uint32) (RequestAccountInfo, error) {
 	params := make(map[string]string)
 
 	for _, v := range accountid {
@@ -415,15 +480,14 @@ func (w *WG) GetPlayerPersonalData(accountid []uint32) ([]Player, error) {
 
 	result, err := w.apiCall("wot/account/info", params)
 	if err != nil {
-		fmt.Println("GetPlayerPersonalData: " + err.Error())
-		return nil, err
+		return RequestAccountInfo{}, err
 	}
-	return result.PlayerList(), err
+	return result.(RequestAccountInfo), err
 
 }
 
 // wot/account/tanks
-func (w *WG) GetPlayerTanks(accountid []uint32, vehicleid []uint32) ([]Vehicle, error) {
+func (w *WG) GetPlayerTanks(accountid []uint32, vehicleid []uint32) (RequestAccountTanks, error) {
 	params := make(map[string]string)
 	for _, v := range vehicleid {
 		_, ok := params["tank_id"]
@@ -443,15 +507,14 @@ func (w *WG) GetPlayerTanks(accountid []uint32, vehicleid []uint32) ([]Vehicle, 
 	}
 	result, err := w.apiCall("wot/account/tanks", params)
 	if err != nil {
-		fmt.Println("GetPlayerTanks: " + err.Error())
-		return nil, err
+		return RequestAccountTanks{}, err
 	}
-	return result.VehicleList(), err
+	return result.(RequestAccountTanks), err
 
 }
 
 // wgn/clans/list
-func (w *WG) SearchClansByName(name string, orderby string, pageno uint32, limit uint32) ([]Clan, error) {
+func (w *WG) SearchClansByName(name string, orderby string, pageno uint32, limit uint32) (RequestClanList, error) {
 	params := make(map[string]string)
 	params["search"] = name
 	params["order_by"] = orderby
@@ -459,8 +522,28 @@ func (w *WG) SearchClansByName(name string, orderby string, pageno uint32, limit
 	params["limit"] = fmt.Sprint(limit)
 	result, err := w.apiCall("wgn/clans/list", params)
 	if err != nil {
-		fmt.Println("SearchClansByName: " + err.Error())
-		return nil, err
+		return RequestClanList{}, err
 	}
-	return result.ClanList(), err
+	return result.(RequestClanList), err
+}
+
+// wgn/clans/info
+func (w *WG) GetClanInfo(clanid []uint32, accessToken string) (RequestClanInfo, error) {
+	params := make(map[string]string)
+	if len(accessToken) > 0 {
+		params["access_token"] = accessToken
+	}
+	for _, v := range clanid {
+		_, ok := params["clan_id"]
+		if len(params["clan_id"]) == 0 || !ok {
+			params["clan_id"] = fmt.Sprint(v)
+		} else {
+			params["clan_id"] += "," + fmt.Sprint(v)
+		}
+	}
+	result, err := w.apiCall("wgn/clans/info", params)
+	if err != nil {
+		return RequestClanInfo{}, err
+	}
+	return result.(RequestClanInfo), err
 }
