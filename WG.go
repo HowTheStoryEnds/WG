@@ -81,29 +81,33 @@ func (n NoPlayerList) PlayerList() []Player {
 	return nil
 }
 
+type ClanMinimal struct {
+	ClanId       uint32      `json:"clan_id"`
+	Color        string      `json:"color"`
+	CreatedAt    uint32      `json:"created_at"`
+	CreatorName  string      `json:"creator_name"`
+	MembersCount uint32      `json:"members_count"`
+	Tag          string      `json:"tag"`
+	Name         string      `json:"name"`
+	Emblems      ClanEmblems `json:"emblems"`
+}
 type Clan struct {
-	AcceptsJoinRequests bool         `json:"accepts_join_requests"`
-	ClanId              uint32       `json:"clan_id"`
-	Color               string       `json:"color"`
-	CreatedAt           uint32       `json:"created_at"`
-	CreatorId           uint32       `json:"creator_id"`
-	CreatorName         string       `json:"creator_name"`
-	Description         string       `json:"description"`
-	DescriptionHtml     string       `json:"description_html"`
-	IsClanDisbanded     bool         `json:"is_clan_disbanded"`
-	LeaderId            uint32       `json:"leader_id"`
-	LeaderName          string       `json:"leader_name"`
-	MembersCount        uint32       `json:"members_count"`
-	Motto               string       `json:"motto"`
-	Name                string       `json:"name"`
-	OldTag              string       `json:"old_tag"`
-	OldName             string       `json:"old_name"`
-	RenamedAt           uint32       `json:"renamed_at"`
-	Tag                 string       `json:"tag"`
-	UpdatedAt           uint32       `json:"updated_at"`
-	Emblems             ClanEmblems  `json:"emblems"`
-	Members             []ClanMember `json:"members"`
-	Private             ClanPrivate  `json:"private"`
+	ClanMinimal
+	AcceptsJoinRequests bool   `json:"accepts_join_requests"`
+	CreatorId           uint32 `json:"creator_id"`
+	Description         string `json:"description"`
+	DescriptionHtml     string `json:"description_html"`
+	IsClanDisbanded     bool   `json:"is_clan_disbanded"`
+	LeaderId            uint32 `json:"leader_id"`
+	LeaderName          string `json:"leader_name"`
+	Motto               string `json:"motto"`
+
+	OldTag    string       `json:"old_tag"`
+	OldName   string       `json:"old_name"`
+	RenamedAt uint32       `json:"renamed_at"`
+	UpdatedAt uint32       `json:"updated_at"`
+	Members   []ClanMember `json:"members"`
+	Private   ClanPrivate  `json:"private"`
 }
 type ClanEmblems struct {
 	X195 map[string]string `json:"x195"`
@@ -116,11 +120,12 @@ type ClanPrivate struct {
 	Treasury uint32 `json:"treasury"`
 }
 type ClanMember struct {
-	AccountId   uint32 `json:"account_id"`
-	AccountName string `json:"account_name"`
-	JoinedAt    uint32 `json:"joined_at"`
-	Role        string `json:"role"`
-	RoleI18n    string `json:"role_i18n"`
+	AccountId   uint32      `json:"account_id"`
+	AccountName string      `json:"account_name"`
+	JoinedAt    uint32      `json:"joined_at"`
+	Role        string      `json:"role"`
+	RoleI18n    string      `json:"role_i18n"`
+	Clan        ClanMinimal `json:"clan"`
 }
 type Vehicle struct {
 	// https://eu.wargaming.net/developers/api_reference/wot/account/tanks/
@@ -316,6 +321,37 @@ func (r RequestClanInfo) ClanList() []Clan {
 	return Clans
 }
 
+type ClanMemberInfo struct {
+	ClanMember
+	Clan
+}
+type RequestClanMember struct {
+	Data map[string]ClanMember
+	NoVehicleList
+	NoPlayerList
+	NoClanList
+}
+
+func (r RequestClanMember) MemberList() []ClanMember {
+	members := []ClanMember{}
+	for _, v := range r.Data {
+		if v.AccountId != 0 {
+			members = append(members, v)
+		}
+	}
+	return members
+}
+
+type ClanRoleSummary struct {
+	ClanRoles map[string]string `json:"clans_roles"`
+}
+type RequestClanRoles struct {
+	Data ClanRoleSummary `json:"data"`
+	NoClanList
+	NoPlayerList
+	NoVehicleList
+}
+
 // we request our data from WG server, we allow for net/http
 type WG struct {
 	region    string
@@ -424,6 +460,14 @@ func (w *WG) apiCall(command string, params map[string]string) (ApiResponse, err
 		req = reqt
 	case "wgn/clans/info":
 		reqt := RequestClanInfo{}
+		err = json.Unmarshal(data, &reqt)
+		req = reqt
+	case "wgn/clans/membersinfo":
+		reqt := RequestClanMember{}
+		err = json.Unmarshal(data, &reqt)
+		req = reqt
+	case "wgn/clans/glossary":
+		reqt := RequestClanRoles{}
 		err = json.Unmarshal(data, &reqt)
 		req = reqt
 	default:
@@ -546,4 +590,31 @@ func (w *WG) GetClanInfo(clanid []uint32, accessToken string) (RequestClanInfo, 
 		return RequestClanInfo{}, err
 	}
 	return result.(RequestClanInfo), err
+}
+
+// wgn/clans/membersinfo
+func (w *WG) GetMemberInfo(accountid []uint32) (RequestClanMember, error) {
+	params := make(map[string]string)
+	for _, v := range accountid {
+		_, ok := params["account_id"]
+		if len(params["account_id"]) == 0 || !ok {
+			params["account_id"] = fmt.Sprint(v)
+		} else {
+			params["account_id"] += "," + fmt.Sprint(v)
+		}
+	}
+	result, err := w.apiCall("wgn/clans/membersinfo", params)
+	if err != nil {
+		return RequestClanMember{}, err
+	}
+	return result.(RequestClanMember), err
+}
+
+// wgn/clans/glossary
+func (w *WG) GetClanRoles() (RequestClanRoles, error) {
+	result, err := w.apiCall("wgn/clans/glossary", map[string]string{})
+	if err != nil {
+		return RequestClanRoles{}, err
+	}
+	return result.(RequestClanRoles), err
 }

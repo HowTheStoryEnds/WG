@@ -1,0 +1,41 @@
+{
+    "status": "ok",
+    "meta": {
+        "count": 1
+    },
+    "data": {
+        "507197901": {
+            "clan": {
+                "members_count": 100,
+                "name": "IDEAL",
+                "color": "#8300DB",
+                "created_at": 1342479197,
+                "tag": "IDEAL",
+                "emblems": {
+                    "x32": {
+                        "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"
+                    },
+                    "x24": {
+                        "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"
+                    },
+                    "x256": {
+                        "wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"
+                    },
+                    "x64": {
+                        "wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
+                        "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64.png"
+                    },
+                    "x195": {
+                        "portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_195x195.png"
+                    }
+                },
+                "clan_id": 500010805
+            },
+            "account_id": 507197901,
+            "role_i18n": "Quartermaster",
+            "joined_at": 1400516603,
+            "role": "quartermaster",
+            "account_name": "HowTheStoryEnds"
+        }
+    }
+}

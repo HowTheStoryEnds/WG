@@ -119,6 +119,36 @@ func (s *WGSuite) SetUpSuite(c *C) {
 	rd.Content, _ = ioutil.ReadFile("./testdata/clans/info/not_found.json")
 	res = append(res, rd)
 
+	/*
+	 *   wgn/clans/membersinfo
+	 */
+	// single player
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/membersinfo/?account_id=507197901&application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/membersinfo/single_player.json")
+	res = append(res, rd)
+	// 2 players, different clans
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/membersinfo/?account_id=507197901%2C507745955&application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/membersinfo/two_players_different_clan.json")
+	res = append(res, rd)
+	// 2 players, same clans
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/membersinfo/?account_id=507197901%2C504593269&application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/membersinfo/two_players_same_clan.json")
+	res = append(res, rd)
+
+	// 2 players, 1 found
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/membersinfo/?account_id=507197901%2C503832789&application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/membersinfo/two_players_one_found.json")
+	res = append(res, rd)
+	// clanless player/not found
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/membersinfo/?account_id=503832789&application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/membersinfo/clanless_player.json")
+	res = append(res, rd)
+
+	// wgn/clans/glossary
+	rd.Uri = []string{"https://api.worldoftanks.eu/wgn/clans/glossary/?application_id=demo"}
+	rd.Content, _ = ioutil.ReadFile("./testdata/clans/glossary/roles.json")
+	res = append(res, rd)
+
 	//setup HTTP mocking service
 	httpmock.Activate()
 	//setup the urls with their content
@@ -644,41 +674,41 @@ func (s *WGSuite) TestSearchClansByName(c *C) {
 	s.Wg.SetRegion("eu")
 	s.Wg.SetTransport("https")
 
-	ClanIdeal := Clan{Tag: "IDEAL", ClanId: 500010805, Name: "IDEAL", Color: "#8300DB", CreatedAt: 1342479197, MembersCount: 100,
+	ClanIdeal := Clan{ClanMinimal: ClanMinimal{Tag: "IDEAL", Name: "IDEAL", ClanId: 500010805, Color: "#8300DB", CreatedAt: 1342479197, MembersCount: 100,
 		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
 				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64.png"},
 			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_195x195.png"},
-		}}
+		}}}
 
-	ClanIdea := Clan{Tag: "IDEA", ClanId: 500025706, Name: "IDEA", Color: "#832F6B", CreatedAt: 1371260245, MembersCount: 1,
+	ClanIdea := Clan{ClanMinimal: ClanMinimal{Tag: "IDEA", Name: "IDEA", ClanId: 500025706, Color: "#832F6B", CreatedAt: 1371260245, MembersCount: 1,
 		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64_tank.png",
 				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_64x64.png"},
 			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_706/500025706/emblem_195x195.png"},
-		}}
+		}}}
 
-	ClanAtgni := Clan{Tag: "ATGNI", ClanId: 500031713, Name: "Wallet Warriors - all the gear, no idea", Color: "#3CCDCF", CreatedAt: 1383168470, MembersCount: 4,
+	ClanAtgni := Clan{ClanMinimal: ClanMinimal{Tag: "ATGNI", Name: "Wallet Warriors - all the gear, no idea", ClanId: 500031713, Color: "#3CCDCF", CreatedAt: 1383168470, MembersCount: 4,
 		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64_tank.png",
 				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_64x64.png"},
 			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_713/500031713/emblem_195x195.png"},
-		}}
+		}}}
 
-	ClanZwis := Clan{Tag: "ZWIS", ClanId: 500039525, Name: "Zawsze Wierni Idealom Socjalizmu.", Color: "#55505B", CreatedAt: 1393522025, MembersCount: 5,
+	ClanZwis := Clan{ClanMinimal: ClanMinimal{Tag: "ZWIS", Name: "Zawsze Wierni Idealom Socjalizmu.", ClanId: 500039525, Color: "#55505B", CreatedAt: 1393522025, MembersCount: 5,
 		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64_tank.png",
 				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_64x64.png"},
 			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_525/500039525/emblem_195x195.png"},
-		}}
+		}}}
 
 	compare := []Clan{ClanIdeal, ClanIdea, ClanAtgni, ClanZwis}
 	// search for ide returns 4 clans
@@ -695,36 +725,37 @@ func (s *WGSuite) TestGetClanInfo(c *C) {
 	s.Wg.SetRegion("eu")
 	s.Wg.SetTransport("https")
 
-	GSI := Clan{LeaderId: 500106838, Color: "#F2755E", UpdatedAt: 1422428943, Tag: "GSI", MembersCount: 3,
-		DescriptionHtml: "<p>Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.\n</p>",
-		CreatorId:       504614524, LeaderName: "TrascherGSI",
+	GSI := Clan{ClanMinimal: ClanMinimal{Color: "#F2755E", Name: "German Suicide Idiots", Tag: "GSI", MembersCount: 3, CreatorName: "TrascherGSI20", CreatedAt: 1305128504, ClanId: 500001758,
+
 		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_64x64_tank.png",
 				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_64x64.png"},
-			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_195x195.png"}},
-		ClanId: 500001758, RenamedAt: 0, OldTag: "", Description: "Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.",
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_758/500001758/emblem_195x195.png"}}},
+		UpdatedAt: 1422428943, RenamedAt: 0, LeaderId: 500106838, OldTag: "", Description: "Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.",
+		DescriptionHtml: "<p>Wir sind EX-Pro Gamer! Angeklagt wegen cheats, die wir nich begangen haben. Seitdem sind wir auf der Flucht! Wir nehmen uns selbst nich ernst aber sollten ernst genommen werden! Oder umgekehrt.\n</p>",
+		CreatorId:       504614524, LeaderName: "TrascherGSI",
 		Members: []ClanMember{ClanMember{Role: "commander", RoleI18n: "Commander", JoinedAt: 1422389232, AccountId: 500106838, AccountName: "TrascherGSI"},
 			ClanMember{Role: "private", RoleI18n: "Private", JoinedAt: 1305128931, AccountId: 500556981, AccountName: "flomander"},
 			ClanMember{Role: "executive_officer", RoleI18n: "Executive Officer", JoinedAt: 1345363766, AccountId: 504614524, AccountName: "TrascherGSI20"}},
-		OldName: "", IsClanDisbanded: false, Motto: "Bevor du uns kriegst hatten wir uns schon!", Name: "German Suicide Idiots",
-		CreatorName: "TrascherGSI20", CreatedAt: 1305128504, AcceptsJoinRequests: true}
+		OldName: "", IsClanDisbanded: false, Motto: "Bevor du uns kriegst hatten wir uns schon!",
+		AcceptsJoinRequests: true}
 
-	HR := Clan{LeaderId: 500412877, Color: "#BCA383", UpdatedAt: 1414642458, Tag: "-HR-", MembersCount: 1,
-		DescriptionHtml: "",
-		CreatorId:       500412877, LeaderName: "xLegendx",
+	HR := Clan{ClanMinimal: ClanMinimal{ClanId: 500002188, Name: "-HellRider", Color: "#BCA383", CreatorName: "xLegendx", CreatedAt: 1306909870, Tag: "-HR-", MembersCount: 1,
+
 		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_32x32.png"},
 			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_24x24.png"},
 			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_256x256.png"},
 			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_64x64_tank.png",
 				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_64x64.png"},
-			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_195x195.png"}},
-		ClanId: 500002188, RenamedAt: 0, OldTag: "", Description: "",
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_188/500002188/emblem_195x195.png"}}},
+		LeaderId: 500412877, RenamedAt: 0, OldTag: "", Description: "", DescriptionHtml: "",
+		CreatorId: 500412877, LeaderName: "xLegendx",
 		Members: []ClanMember{ClanMember{Role: "commander", RoleI18n: "Commander", JoinedAt: 1306909870, AccountId: 500412877,
 			AccountName: "xLegendx"}},
-		OldName: "", IsClanDisbanded: false, Motto: ";)", Name: "-HellRider",
-		CreatorName: "xLegendx", CreatedAt: 1306909870, AcceptsJoinRequests: false}
+		OldName: "", IsClanDisbanded: false, Motto: ";)",
+		UpdatedAt: 1414642458, AcceptsJoinRequests: false}
 
 	// single clan
 	result, err := s.Wg.GetClanInfo([]uint32{500002188}, NoAccessToken)
@@ -770,4 +801,145 @@ func (s *WGSuite) TestGetClanInfo(c *C) {
 	result, err = s.Wg.GetClanInfo([]uint32{1}, NoAccessToken)
 	retrieved = result.ClanList()
 	c.Check(retrieved, DeepEquals, []Clan{})
+}
+
+func (s *WGSuite) TestGetMemberInfo(c *C) {
+	HowTheStoryEnds := ClanMember{Clan: ClanMinimal{MembersCount: 100, Name: "IDEAL",
+		Color:     "#8300DB",
+		CreatedAt: 1342479197,
+		Tag:       "IDEAL",
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_195x195.png"}},
+		ClanId: 500010805},
+		AccountId:   507197901,
+		RoleI18n:    "Quartermaster",
+		JoinedAt:    1400516603,
+		Role:        "quartermaster",
+		AccountName: "HowTheStoryEnds"}
+
+	H311fi5h := ClanMember{Clan: ClanMinimal{MembersCount: 100, Name: "IDEAL",
+		Color:     "#8300DB",
+		CreatedAt: 1342479197,
+		Tag:       "IDEAL",
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_805/500010805/emblem_195x195.png"}},
+		ClanId: 500010805},
+		AccountId:   504593269,
+		RoleI18n:    "Commander",
+		JoinedAt:    1388420389,
+		Role:        "commander",
+		AccountName: "H311fi5h"}
+
+	BadGene616 := ClanMember{Clan: ClanMinimal{MembersCount: 37, Name: "The Scrubs",
+		Color:     "#F70000",
+		CreatedAt: 1398607270,
+		Tag:       "SCRUB",
+		Emblems: ClanEmblems{X32: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_745/500044745/emblem_32x32.png"},
+			X24:  map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_745/500044745/emblem_24x24.png"},
+			X256: map[string]string{"wowp": "http://eu.wargaming.net/clans/media/clans/emblems/cl_745/500044745/emblem_256x256.png"},
+			X64: map[string]string{"wot": "http://eu.wargaming.net/clans/media/clans/emblems/cl_745/500044745/emblem_64x64_tank.png",
+				"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_745/500044745/emblem_64x64.png"},
+			X195: map[string]string{"portal": "http://eu.wargaming.net/clans/media/clans/emblems/cl_745/500044745/emblem_195x195.png"}},
+		ClanId: 500044745},
+		AccountId:   507745955,
+		RoleI18n:    "Commander",
+		JoinedAt:    1398607270,
+		Role:        "commander",
+		AccountName: "BadGene616"}
+
+	// single player
+	result, err := s.Wg.GetMemberInfo([]uint32{507197901})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved := result.MemberList()
+	c.Check(retrieved, HasLen, 1)
+	c.Check(retrieved, DeepEquals, []ClanMember{HowTheStoryEnds})
+	// 2 players, different clans
+	result, err = s.Wg.GetMemberInfo([]uint32{507197901, 507745955})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved = result.MemberList()
+	c.Check(retrieved, HasLen, 2)
+	compare := []ClanMember{}
+	for _, v := range retrieved {
+		switch v.AccountName {
+		case "HowTheStoryEnds":
+			compare = append(compare, HowTheStoryEnds)
+
+		case "BadGene616":
+			compare = append(compare, BadGene616)
+		}
+	}
+	c.Check(retrieved, DeepEquals, compare)
+	// 2 players, same clans
+	result, err = s.Wg.GetMemberInfo([]uint32{507197901, 504593269})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved = result.MemberList()
+	c.Check(retrieved, HasLen, 2)
+	compare = []ClanMember{}
+	for _, v := range retrieved {
+		switch v.AccountName {
+		case "HowTheStoryEnds":
+			compare = append(compare, HowTheStoryEnds)
+
+		case "H311fi5h":
+			compare = append(compare, H311fi5h)
+		}
+	}
+	c.Check(retrieved, DeepEquals, compare)
+	// 2 players, 1 found
+	result, err = s.Wg.GetMemberInfo([]uint32{507197901, 503832789})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved = result.MemberList()
+	c.Check(retrieved, HasLen, 1)
+	c.Check(retrieved, DeepEquals, []ClanMember{HowTheStoryEnds})
+	// clanless player/not found
+	result, err = s.Wg.GetMemberInfo([]uint32{503832789})
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	retrieved = result.MemberList()
+	c.Check(retrieved, HasLen, 0)
+	c.Check(retrieved, DeepEquals, []ClanMember{})
+}
+
+func (s *WGSuite) TestGetClanRoles(c *C) {
+
+	Roles := map[string]string{"junior_officer": "Junior Officer",
+		"personnel_officer":    "Personnel Officer",
+		"quartermaster":        "Quartermaster",
+		"executive_officer":    "Executive Officer",
+		"recruit":              "Recruit",
+		"private":              "Private",
+		"commander":            "Commander",
+		"reservist":            "Reservist",
+		"combat_officer":       "Combat Officer",
+		"recruitment_officer":  "Recruitment Officer",
+		"intelligence_officer": "Intelligence Officer"}
+
+	result, err := s.Wg.GetClanRoles()
+	if err != nil {
+		fmt.Println(err.Error())
+		c.Fail()
+	}
+	c.Check(result.Data.ClanRoles, DeepEquals, Roles)
 }
